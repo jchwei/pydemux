@@ -6,6 +6,7 @@
 
 static PyObject* open_wrapper(PyObject* self, PyObject* arg);
 static PyObject* get_frame_wrapper(PyObject* self, PyObject* arg);
+static PyObject* get_raw_frame_wrapper(PyObject* self, PyObject* args)
 static PyObject* release_frame_wrapper(PyObject* self, PyObject* arg);
 static PyObject* close_wrapper(PyObject* self, PyObject* arg);
 static PyObject* seek_wrapper(PyObject* self, PyObject* arg);
@@ -14,6 +15,7 @@ static PyMethodDef methods[] =
 {
     {"open", open_wrapper, METH_VARARGS, "open"},
     {"get_frame", get_frame_wrapper, METH_VARARGS, "get_frame"},
+    {"get_raw_frame", get_raw_frame_wrapper, METH_VARARGS, "get raw frame, need to free memory manually"},
     {"close", close_wrapper, METH_VARARGS, "close"},
     {"seek", seek_wrapper, METH_VARARGS, "seek: ms stream_type seek_type"},
     {NULL, NULL, 0, NULL}
@@ -57,6 +59,40 @@ static PyObject* open_wrapper(PyObject* self, PyObject* args)
     return Py_BuildValue("l", ctx);
 }
 
+/**
+ * frame memory should be released manually
+ * demux_release_frame
+ */
+static PyObject* get_raw_frame_wrapper(PyObject* self, PyObject* args)
+{
+    PyObject* ret;
+
+    demux_ctx_t* ctx = NULL;
+
+    uint8_t* frame;
+
+    int width;
+    int height;
+
+    if (!PyArg_ParseTuple(args, "l", &ctx))
+        return NULL;
+
+    // demux frame
+    frame = demux_get_frame(ctx);
+
+    if (!frame)
+        Py_RETURN_NONE;
+
+    // convert RGB array to python string
+    width = demux_get_width(ctx);
+    height = demux_get_height(ctx);
+
+    ret = Py_BuildValue("liiif", frame, width, height,
+        ctx->cur_video_pts, ctx->cur_video_pts_in_ms);
+
+    return ret;
+}
+
 static PyObject* get_frame_wrapper(PyObject* self, PyObject* args)
 {
     PyObject* ret;
@@ -85,7 +121,7 @@ static PyObject* get_frame_wrapper(PyObject* self, PyObject* args)
     bytes = PyBytes_FromStringAndSize((char *)frame, (width*height*3));
     demux_release_frame(ctx, frame);
 
-    ret = Py_BuildValue("Sii", bytes, width, height);
+    ret = Py_BuildValue("Siiif", bytes, width, height, ctx->cur_video_pts, ctx->cur_video_pts_in_ms);
     Py_XDECREF(bytes);
 
     return ret;

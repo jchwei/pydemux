@@ -185,9 +185,6 @@ uint8_t* demux_get_frame(demux_ctx_t* ctx)
 
     if (frame)
     {
-        width  = ctx->vdec_ctx->width;
-        height = ctx->vdec_ctx->height;
-
         // save pts time
         AVRational time_base = ctx->fmt_ctx->streams[ctx->video_stream_idx]->time_base;
         int frame_pts_in_ms = frame->pts * av_q2d(time_base) * 1000;
@@ -198,6 +195,10 @@ uint8_t* demux_get_frame(demux_ctx_t* ctx)
             return NULL;
         }
 
+        width  = ctx->vdec_ctx->width;
+        height = ctx->vdec_ctx->height;
+
+        ctx->cur_video_pts = frame->pts;
         ctx->cur_video_pts_in_ms = frame_pts_in_ms;
         return yuv420_to_rgb24(frame, width, height);
     }
@@ -243,7 +244,7 @@ static int decode_video_packet(demux_ctx_t* ctx, AVFrame** frame, AVPacket* pkt)
     int got_frame;
     int ret;
 
-    printf("Decode Pts: %lld\n", pkt->pts);
+    printf("Decode pkt->pts: %lld\n", pkt->pts);
 
     /* decode video frame */
     ret = avcodec_decode_video2(ctx->vdec_ctx, ctx->frame, &got_frame, pkt);

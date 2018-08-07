@@ -23,6 +23,7 @@ typedef struct
     int has_video_stream;
     int has_audio_stream;
 
+    int cur_video_pts;
     int cur_video_pts_in_ms;
 
 } demux_ctx_t;
