@@ -6,8 +6,8 @@
 
 static PyObject* open_wrapper(PyObject* self, PyObject* arg);
 static PyObject* get_frame_wrapper(PyObject* self, PyObject* arg);
-static PyObject* get_raw_frame_wrapper(PyObject* self, PyObject* args)
-static PyObject* release_frame_wrapper(PyObject* self, PyObject* arg);
+static PyObject* get_raw_frame_wrapper(PyObject* self, PyObject* args);
+static PyObject* free_raw_frame_wrapper(PyObject* self, PyObject* arg);
 static PyObject* close_wrapper(PyObject* self, PyObject* arg);
 static PyObject* seek_wrapper(PyObject* self, PyObject* arg);
 
@@ -16,6 +16,7 @@ static PyMethodDef methods[] =
     {"open", open_wrapper, METH_VARARGS, "open"},
     {"get_frame", get_frame_wrapper, METH_VARARGS, "get_frame"},
     {"get_raw_frame", get_raw_frame_wrapper, METH_VARARGS, "get raw frame, need to free memory manually"},
+    {"free_raw_frame", free_raw_frame_wrapper, METH_VARARGS, "free raw frame"},
     {"close", close_wrapper, METH_VARARGS, "close"},
     {"seek", seek_wrapper, METH_VARARGS, "seek: ms stream_type seek_type"},
     {NULL, NULL, 0, NULL}
@@ -91,6 +92,18 @@ static PyObject* get_raw_frame_wrapper(PyObject* self, PyObject* args)
         ctx->cur_video_pts, ctx->cur_video_pts_in_ms);
 
     return ret;
+}
+
+static PyObject* free_raw_frame_wrapper(PyObject* self, PyObject* arg) {
+    demux_ctx_t* ctx = NULL;
+    uint8_t* raw_data = NULL;
+
+    if(!PyArg_ParseTuple(arg, "ll", &ctx, &raw_data)) {
+        Py_RETURN_NONE;
+    }
+
+    demux_release_frame(ctx, raw_data);
+    Py_RETURN_NONE;
 }
 
 static PyObject* get_frame_wrapper(PyObject* self, PyObject* args)
