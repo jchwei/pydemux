@@ -22,23 +22,23 @@ class Demux(object):
     def __init__(self, filename):
         self.ctx = _demux.open(filename)
 
+    def get_frame_num(self):
+        return _demux.get_frame_num(self.ctx)
 
     def get_image(self):
         result = _demux.get_frame(self.ctx)
         if result is None:
             return None
 
-        frame, w, h, pts, ms, = result
+        frame, w, h, idx, pts, ms, = result
         return Image.frombytes("RGB", (w, h), frame)
-
 
     def get_raw_image(self):
         result = _demux.get_frame(self.ctx)
         if result is None:
             return None
-        frame, w, h, pts, ms, = result
+        frame, w, h, idx, pts, ms, = result
         return RawImage(w, h, 3, frame, pts, ms)
-
 
     def get_raw_frame(self):
         result = _demux.get_raw_frame(self.ctx)
@@ -47,14 +47,11 @@ class Demux(object):
         #frame, w, h, pts, ms, = result
         return result
 
-
     def free_raw_data(self, raw_data):
         _demux.free_raw_frame(self.ctx, raw_data)
 
-
     def seek(self, ms, stream_type=0, seek_type=0):
         return _demux.seek(self.ctx, ms, stream_type, seek_type);
-
 
     def __del__(self):
         if self.ctx is not None:

@@ -5,6 +5,7 @@
 #include "_demux.h"
 
 static PyObject* open_wrapper(PyObject* self, PyObject* arg);
+static PyObject* get_frame_num_wrapper(PyObject* self, PyObject* arg);
 static PyObject* get_frame_wrapper(PyObject* self, PyObject* arg);
 static PyObject* get_raw_frame_wrapper(PyObject* self, PyObject* args);
 static PyObject* free_raw_frame_wrapper(PyObject* self, PyObject* arg);
@@ -14,6 +15,7 @@ static PyObject* seek_wrapper(PyObject* self, PyObject* arg);
 static PyMethodDef methods[] =
 {
     {"open", open_wrapper, METH_VARARGS, "open"},
+    {"get_frame_num", get_frame_num_wrapper, METH_VARARGS, "get number of frames"},
     {"get_frame", get_frame_wrapper, METH_VARARGS, "get_frame"},
     {"get_raw_frame", get_raw_frame_wrapper, METH_VARARGS, "get raw frame, need to free memory manually"},
     {"free_raw_frame", free_raw_frame_wrapper, METH_VARARGS, "free raw frame"},
@@ -60,6 +62,14 @@ static PyObject* open_wrapper(PyObject* self, PyObject* args)
     return Py_BuildValue("l", ctx);
 }
 
+
+static PyObject* get_frame_num_wrapper(PyObject* self, PyObject* arg) {
+    demux_ctx_t* ctx = NULL;
+    if(!PyArg_ParseTuple(arg, "l", &ctx))
+        Py_RETURN_NONE;
+    return Py_BuildValue("l", ctx->video_frame_num);
+}
+
 /**
  * frame memory should be released manually
  * demux_release_frame
@@ -88,8 +98,8 @@ static PyObject* get_raw_frame_wrapper(PyObject* self, PyObject* args)
     width = demux_get_width(ctx);
     height = demux_get_height(ctx);
 
-    ret = Py_BuildValue("liiif", frame, width, height,
-        ctx->cur_video_pts, ctx->cur_video_pts_in_ms);
+    ret = Py_BuildValue("liilll", frame, width, height,
+        ctx->cur_video_idx, ctx->cur_video_pts, ctx->cur_video_pts_in_ms);
 
     return ret;
 }
@@ -134,7 +144,8 @@ static PyObject* get_frame_wrapper(PyObject* self, PyObject* args)
     bytes = PyBytes_FromStringAndSize((char *)frame, (width*height*3));
     demux_release_frame(ctx, frame);
 
-    ret = Py_BuildValue("Siiif", bytes, width, height, ctx->cur_video_pts, ctx->cur_video_pts_in_ms);
+    ret = Py_BuildValue("Siilll", bytes, width, height,
+        ctx->cur_video_idx, ctx->cur_video_pts, ctx->cur_video_pts_in_ms);
     Py_XDECREF(bytes);
 
     return ret;

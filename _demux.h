@@ -23,8 +23,10 @@ typedef struct
     int has_video_stream;
     int has_audio_stream;
 
-    int cur_video_pts;
-    int cur_video_pts_in_ms;
+    int64_t cur_video_idx; // -1 means not sure
+    int64_t cur_video_pts;
+    int64_t cur_video_pts_in_ms;
+    int64_t video_frame_num;
 
 } demux_ctx_t;
 

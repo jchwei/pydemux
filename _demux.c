@@ -87,7 +87,9 @@ demux_ctx_t* demux_open(char* filename)
             ctx->has_video_stream = 1;
 
             ctx->vdec_ctx = dec_ctx;
+            ctx->cur_video_idx = 0;
             ctx->video_stream_idx = stream_idx;
+            ctx->video_frame_num = fmt_ctx->streams[stream_idx]->nb_frames;
         }
         else
         {
@@ -188,7 +190,7 @@ uint8_t* demux_get_frame(demux_ctx_t* ctx)
         // save pts time
         AVRational time_base = ctx->fmt_ctx->streams[ctx->video_stream_idx]->time_base;
         int frame_pts_in_ms = frame->pts * av_q2d(time_base) * 1000;
-        printf("Frame in %d ms\n", frame_pts_in_ms);
+        //printf("Frame in %d ms\n", frame_pts_in_ms);
         if(frame_pts_in_ms + 250 < ctx->cur_video_pts_in_ms) {
             printf("Skip old frames\n");
             av_frame_unref(frame);
@@ -197,6 +199,9 @@ uint8_t* demux_get_frame(demux_ctx_t* ctx)
 
         width  = ctx->vdec_ctx->width;
         height = ctx->vdec_ctx->height;
+
+        if(ctx->cur_video_idx != -1)
+          ctx->cur_video_idx++;
 
         ctx->cur_video_pts = frame->pts;
         ctx->cur_video_pts_in_ms = frame_pts_in_ms;
@@ -244,7 +249,7 @@ static int decode_video_packet(demux_ctx_t* ctx, AVFrame** frame, AVPacket* pkt)
     int got_frame;
     int ret;
 
-    printf("Decode pkt->pts: %lld\n", pkt->pts);
+    //printf("Decode pkt->pts: %lld\n", pkt->pts);
 
     /* decode video frame */
     ret = avcodec_decode_video2(ctx->vdec_ctx, ctx->frame, &got_frame, pkt);
@@ -419,6 +424,10 @@ int demux_goto(demux_ctx_t* ctx, int stream_type, int ms, int flag) {
 
     if(ret >= 0) {
         ctx->cur_video_pts_in_ms = ms;
+        if(seek_timestampe != 0)
+          ctx->cur_video_idx = -1;
+        else
+          ctx->cur_video_idx = 0;
     }
 
     return ret;
