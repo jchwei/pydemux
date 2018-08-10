@@ -1,19 +1,22 @@
 from PyDemux import _demux
 from PIL import Image
 
+
 class RawImage(object):
     width = 0
     height = 0
     channel = 3 # RGB format
     data = None # bytes
+    idx = 0
     pts = 0
     ms = 0
 
-    def __init__(self, w, h, c, data, pts, ms):
+    def __init__(self, w, h, c, data, idx, pts, ms):
         self.width = w
         self.height = h
         self.channel = c
         self.data = data
+        self.idx = idx
         self.pts = pts
         self.ms = ms
 
@@ -38,7 +41,7 @@ class Demux(object):
         if result is None:
             return None
         frame, w, h, idx, pts, ms, = result
-        return RawImage(w, h, 3, frame, pts, ms)
+        return RawImage(w, h, 3, frame, idx, pts, ms)
 
     def get_raw_frame(self):
         result = _demux.get_raw_frame(self.ctx)
